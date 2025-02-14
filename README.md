@@ -3,6 +3,16 @@
 
 当前只支持两种调用方式，一种是cloudflare的文生图，一种是openai的api，后续再持续增加api接入及完善
 
+效果如下图
+<div align="center">
+<img width="700" src="./docs/WX20250214-112614@2x.png">
+</div>
+
+<div align="center">
+<img width="700" src="./docs/WX20250214-112549@2x.png">
+</div>
+
+
 
 
 安装后，记得cp config.json.template config.json
