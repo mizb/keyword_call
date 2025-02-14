@@ -1,6 +1,10 @@
 # keyword_call
 可用于dify-on-wechat和chatgpt-on-wechat的插件，可设置多个关键字，根据不同关键字调用不同的API
 
+当前只支持两种调用方式，一种是cloudflare的文生图，一种是openai的api，后续再持续增加api接入及完善
+
+
+
 安装后，记得cp config.json.template config.json
 
 config.json 配置说明
