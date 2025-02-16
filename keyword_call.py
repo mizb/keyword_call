@@ -2,6 +2,7 @@
 import io
 import json
 import base64
+import re
 import os
 import html
 from urllib.parse import urlparse
@@ -13,6 +14,7 @@ from bridge.context import ContextType
 from bridge.reply import Reply, ReplyType
 from common.log import logger
 from plugins import *
+from .utils import Utils
 
 @plugins.register(
     name="KeywordCall",
@@ -66,10 +68,16 @@ class KeywordCall(Plugin):
                 #all_prompt = f"{self.prompt}\n\n'''{content[len(matching_keywords[0]):]}'''"
                 #print(all_prompt)
                 if self.api_type == "cf-image":
-                    print(self.prompt+" "+content[len(matching_keywords[0]):])
-                    openai_payload = { "prompt": self.prompt+" "+content[len(matching_keywords[0]):]}
+                    translatorCfg = self.config.get("#translator#")
+                    print(translatorCfg)
+                    trans_user_prompt = Utils.translate(self,endpoint=translatorCfg.get("open_ai_api_base"),appkey=translatorCfg.get("open_ai_api_key"),query=content[len(matching_keywords[0]):],from_lang="chinese",to_lang="english")
+                    print(self.prompt+" "+trans_user_prompt)
+                    openai_payload = { "prompt": self.prompt+" "+trans_user_prompt}
                 elif self.api_type == "openai":
                     all_prompt = f"{self.prompt}\n\n'''{content[len(matching_keywords[0]):]}'''"
+                    openai_payload = self._get_openai_payload(all_prompt)
+                elif self.api_type == "openai-img":
+                    all_prompt = self.prompt+" "+content[len(matching_keywords[0]):]
                     openai_payload = self._get_openai_payload(all_prompt)
                 logger.debug(f"[KeywordCall] openai_chat_url: {openai_chat_url}, openai_headers: {openai_headers}, openai_payload: {openai_payload}")
                 response = requests.post(openai_chat_url, headers=openai_headers, json=openai_payload, timeout=60)
@@ -82,7 +90,16 @@ class KeywordCall(Plugin):
                     e_context["reply"] = reply
                 elif self.api_type == "openai":
                     result = response.json()['choices'][0]['message']['content']
-                    reply = Reply(ReplyType.TEXT, result)
+                    if "[Generated Image]" in response.text:
+                        match = re.search(r"!\[Generated Image\]\((https://[^\)]+)\)", result)
+                        image_url = match.group(1)
+                        reply = Reply(ReplyType.IMAGE_URL,image_url)
+                    elif "[Image]" in response.text:
+                        match = re.search(r"!\[Image\]\((https://[^\)]+)\)", result)
+                        image_url = match.group(1)
+                        reply = Reply(ReplyType.IMAGE_URL,image_url)
+                    else:
+                        reply = Reply(ReplyType.TEXT, result)
                     e_context["reply"] = reply
                 e_context.action = EventAction.BREAK_PASS
             else:
