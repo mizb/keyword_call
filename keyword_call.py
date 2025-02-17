@@ -43,6 +43,7 @@ class KeywordCall(Plugin):
     def on_handle_context(self, e_context: EventContext, retry_count: int = 0):
         try:
             context = e_context["context"]
+            print(context.type)
             if context.type != ContextType.TEXT:
                 return
             content = context.content.strip()
@@ -65,8 +66,6 @@ class KeywordCall(Plugin):
                 openai_chat_url = self.open_ai_api_base
                 openai_headers = self._get_openai_headers()
                 openai_payload = None
-                #all_prompt = f"{self.prompt}\n\n'''{content[len(matching_keywords[0]):]}'''"
-                #print(all_prompt)
                 if self.api_type == "cf-image":
                     translatorCfg = self.config.get("#translator#")
                     print(translatorCfg)
@@ -91,16 +90,20 @@ class KeywordCall(Plugin):
                 elif self.api_type == "openai":
                     result = response.json()['choices'][0]['message']['content']
                     if "[Generated Image]" in response.text:
-                        match = re.search(r"!\[Generated Image\]\((https://[^\)]+)\)", result)
-                        image_url = match.group(1)
-                        reply = Reply(ReplyType.IMAGE_URL,image_url)
+                        images = re.findall(r'!?\[Generated Image\]\((https[^)]+)\)', result)
+                        for image_url in images:
+                           reply = Reply(ReplyType.IMAGE_URL,image_url)
+                           channel = e_context["channel"]
+                           channel.send(reply, context)
                     elif "[Image]" in response.text:
-                        match = re.search(r"!\[Image\]\((https://[^\)]+)\)", result)
-                        image_url = match.group(1)
-                        reply = Reply(ReplyType.IMAGE_URL,image_url)
+                        images = re.findall(r'!?\[Image\]\((https[^)]+)\)', result)
+                        for image_url in images:
+                           reply = Reply(ReplyType.IMAGE_URL,image_url)
+                           channel = e_context["channel"]
+                           channel.send(reply, context)
                     else:
                         reply = Reply(ReplyType.TEXT, result)
-                    e_context["reply"] = reply
+                        e_context["reply"] = reply
                 e_context.action = EventAction.BREAK_PASS
             else:
                 return
