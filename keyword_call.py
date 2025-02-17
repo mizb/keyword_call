@@ -63,23 +63,27 @@ class KeywordCall(Plugin):
                 self.open_ai_api_key = self.config[matching_keywords[0]].get("open_ai_api_key", "")
                 self.open_ai_model = self.config[matching_keywords[0]].get("open_ai_model","")
                 self.prompt = self.config[matching_keywords[0]].get("prompt", "")
+                self.is_translate = self.config[matching_keywords[0]].get("is_translate", False)
                 openai_chat_url = self.open_ai_api_base
                 openai_headers = self._get_openai_headers()
                 openai_payload = None
                 if self.api_type == "cf-image":
-                    translatorCfg = self.config.get("#translator#")
-                    trans_user_prompt = Utils.translate(self,endpoint=translatorCfg.get("open_ai_api_base"),appkey=translatorCfg.get("open_ai_api_key"),query=content[len(matching_keywords[0]):],from_lang="chinese",to_lang="english")
-                    print(self.prompt+" "+trans_user_prompt)
-                    openai_payload = { "prompt": self.prompt+" "+trans_user_prompt}
+                    user_prompt = content[len(matching_keywords[0]):]
+                    if self.is_translate == True:
+                        user_prompt = self._translate(user_prompt)
+                    openai_payload = { "prompt": self.prompt+" "+user_prompt}
                 elif self.api_type == "openai":
-                    #all_prompt = f"{self.prompt}\n\n'''{content[len(matching_keywords[0]):]}'''" 采用下面的方式合并提示词的兼容性高一些
-                    all_prompt = self.prompt+" "+content[len(matching_keywords[0]):]
-                    openai_payload = self._get_openai_payload(all_prompt)
+                    user_prompt = content[len(matching_keywords[0]):]
+                    if self.is_translate == True:
+                        user_prompt = self._translate(user_prompt)
+                    openai_payload = self._get_openai_payload(self.prompt+" "+user_prompt)
                 elif self.api_type == "dify":
-                    all_prompt = self.prompt+" "+content[len(matching_keywords[0]):]
+                    user_prompt = content[len(matching_keywords[0]):]
+                    if self.is_translate == True:
+                        user_prompt = self._translate(user_prompt)
                     openai_payload = {
                        "inputs": {},
-                       "query": all_prompt,
+                       "query": self.prompt+" "+user_prompt,
                        "response_mode": "blocking",
                        "conversation_id": "",
                        "user": "abc",
@@ -143,6 +147,12 @@ class KeywordCall(Plugin):
                     return plugin_conf
         except Exception as e:
             logger.exception(e)
+
+    def _translate(self,content):
+        translatorCfg = self.config.get("#translator#")
+        user_prompt = Utils.translate(self,endpoint=translatorCfg.get("open_ai_api_base"),appkey=translatorCfg.get("open_ai_api_key"),query=content,from_lang="chinese",to_lang="english")
+        print(user_prompt)
+        return user_prompt
 
     def _get_openai_headers(self):
         return {
