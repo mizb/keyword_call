@@ -68,16 +68,23 @@ class KeywordCall(Plugin):
                 openai_payload = None
                 if self.api_type == "cf-image":
                     translatorCfg = self.config.get("#translator#")
-                    print(translatorCfg)
                     trans_user_prompt = Utils.translate(self,endpoint=translatorCfg.get("open_ai_api_base"),appkey=translatorCfg.get("open_ai_api_key"),query=content[len(matching_keywords[0]):],from_lang="chinese",to_lang="english")
                     print(self.prompt+" "+trans_user_prompt)
                     openai_payload = { "prompt": self.prompt+" "+trans_user_prompt}
                 elif self.api_type == "openai":
-                    all_prompt = f"{self.prompt}\n\n'''{content[len(matching_keywords[0]):]}'''"
-                    openai_payload = self._get_openai_payload(all_prompt)
-                elif self.api_type == "openai-img":
+                    #all_prompt = f"{self.prompt}\n\n'''{content[len(matching_keywords[0]):]}'''" 采用下面的方式合并提示词的兼容性高一些
                     all_prompt = self.prompt+" "+content[len(matching_keywords[0]):]
                     openai_payload = self._get_openai_payload(all_prompt)
+                elif self.api_type == "dify":
+                    all_prompt = self.prompt+" "+content[len(matching_keywords[0]):]
+                    openai_payload = {
+                       "inputs": {},
+                       "query": all_prompt,
+                       "response_mode": "blocking",
+                       "conversation_id": "",
+                       "user": "abc",
+                       "files": []
+                    }
                 logger.debug(f"[KeywordCall] openai_chat_url: {openai_chat_url}, openai_headers: {openai_headers}, openai_payload: {openai_payload}")
                 response = requests.post(openai_chat_url, headers=openai_headers, json=openai_payload, timeout=60)
                 response.raise_for_status()
@@ -104,6 +111,10 @@ class KeywordCall(Plugin):
                     else:
                         reply = Reply(ReplyType.TEXT, result)
                         e_context["reply"] = reply
+                elif self.api_type == "dify":
+                     result = response.json()['answer']
+                     reply = Reply(ReplyType.TEXT, result)
+                     e_context["reply"] = reply
                 e_context.action = EventAction.BREAK_PASS
             else:
                 return
