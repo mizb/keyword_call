@@ -1,9 +1,11 @@
 # keyword_call
 可用于dify-on-wechat和chatgpt-on-wechat的插件，可设置多个关键字，根据不同关键字调用不同的API
 
-当前只支持两种调用方式，一种是cloudflare的文生图，一种是openai的api，后续再持续增加api接入及完善
 
 0.0.2已发布，支持文生图时自动翻译成英文后再生成图片，支持返回多张图片
+
+当前支持三种调用方式，一是兼容openai的api，二是支持dify的api，三是兼容cloudflare的文生图接口，后续再持续增加api接入及完善
+
 
 效果如下图
 <div align="center">
