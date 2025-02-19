@@ -21,7 +21,7 @@ from .utils import Utils
     desire_priority=10,
     hidden=False,
     desc="Call different APIs based on keywords",
-    version="0.0.1",
+    version="0.0.2",
     author="pigracing",
 )
 class KeywordCall(Plugin):
@@ -47,6 +47,9 @@ class KeywordCall(Plugin):
             if context.type != ContextType.TEXT:
                 return
             content = context.content.strip()
+            if content.startswith(("#invoking_reply#", "#error_reply#", "#translator#")):
+                logger.debug("命中插件保留字，不进行响应")
+                return
             logger.debug("[keyword] on_handle_context. content: %s" % content)
             keywords = list(self.config.keys())
             matching_keywords = [keyword for keyword in keywords if content.startswith(keyword)]
@@ -73,6 +76,7 @@ class KeywordCall(Plugin):
                         user_prompt = self._translate(user_prompt)
                     openai_payload = { "prompt": self.prompt+" "+user_prompt}
                 elif self.api_type == "openai":
+                    #all_prompt = f"{self.prompt}\n\n'''{content[len(matching_keywords[0]):]}'''" 采用下面的方式合并提示词的兼容性高一些
                     user_prompt = content[len(matching_keywords[0]):]
                     if self.is_translate == True:
                         user_prompt = self._translate(user_prompt)
@@ -150,9 +154,13 @@ class KeywordCall(Plugin):
 
     def _translate(self,content):
         translatorCfg = self.config.get("#translator#")
-        user_prompt = Utils.translate(self,endpoint=translatorCfg.get("open_ai_api_base"),appkey=translatorCfg.get("open_ai_api_key"),query=content,from_lang="chinese",to_lang="english")
-        print(user_prompt)
-        return user_prompt
+        api_type = translatorCfg.get("api_type")
+        if api_type == "openai":
+            target_lang = Utils.translatByOpenAI(self,endpoint=translatorCfg.get("open_ai_api_base"),appkey=translatorCfg.get("open_ai_api_key"),model=translatorCfg.get("open_ai_model"),prompt=translatorCfg.get("prompt"),query=content)
+        else:
+            target_lang = Utils.translate(self,endpoint=translatorCfg.get("open_ai_api_base"),appkey=translatorCfg.get("open_ai_api_key"),query=content,from_lang="chinese",to_lang=translatorCfg.get("to_lang"))
+        print("trans: "+target_lang)
+        return target_lang
 
     def _get_openai_headers(self):
         return {
