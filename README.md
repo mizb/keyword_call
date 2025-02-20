@@ -26,7 +26,7 @@ config.json 配置说明
 {
   "#invoking_reply#": "🪄✨ 正在为您召唤魔法，稍等一会儿，马上就好。",
   "#error_reply#": "😮‍💨看起来像是服务器在做深呼吸，稍等一下，它会回来的。",
-  "translator_cf":{
+  "#translator#":{
       "api_type": "openai",
       "open_ai_api_base":"https://api.cloudflare.com/client/v4/accounts/account_id/ai/run/@cf/meta/m2m100-1.2b",
       "open_ai_api_key":"api-key",
