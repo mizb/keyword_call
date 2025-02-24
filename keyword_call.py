@@ -21,7 +21,7 @@ from .utils import Utils
     desire_priority=10,
     hidden=False,
     desc="Call different APIs based on keywords",
-    version="0.0.2",
+    version="0.0.3",
     author="pigracing",
 )
 class KeywordCall(Plugin):
@@ -43,6 +43,7 @@ class KeywordCall(Plugin):
     def on_handle_context(self, e_context: EventContext, retry_count: int = 0):
         try:
             context = e_context["context"]
+            print(context)
             #print(context.type)
             if context.type != ContextType.TEXT:
                 return
@@ -66,6 +67,7 @@ class KeywordCall(Plugin):
                 self.open_ai_api_key = self.config[matching_keywords[0]].get("open_ai_api_key", "")
                 self.open_ai_model = self.config[matching_keywords[0]].get("open_ai_model","")
                 self.prompt = self.config[matching_keywords[0]].get("prompt", "")
+                self.image_regex = self.config[matching_keywords[0]].get("image_regex", "")
                 self.is_translate = self.config[matching_keywords[0]].get("is_translate", False)
                 openai_chat_url = self.open_ai_api_base
                 openai_headers = self._get_openai_headers()
@@ -104,36 +106,22 @@ class KeywordCall(Plugin):
                     e_context["reply"] = reply
                 elif self.api_type == "openai":
                     result = response.json()['choices'][0]['message']['content']
-                    if "[Generated Image]" in response.text:
-                        images = re.findall(r'!?\[Generated Image\]\((https[^)]+)\)', result)
-                        for image_url in images:
-                           reply = Reply(ReplyType.IMAGE_URL,image_url)
-                           channel = e_context["channel"]
-                           channel.send(reply, context)
-                    elif "[Image]" in response.text:
-                        images = re.findall(r'!?\[Image\]\((https[^)]+)\)', result)
-                        for image_url in images:
-                           reply = Reply(ReplyType.IMAGE_URL,image_url)
-                           channel = e_context["channel"]
-                           channel.send(reply, context)
-                    elif "点击下载图片" in result:
-                        images = re.findall(r'\[🖼️ 点击下载图片\]\((https?://[^\s]+)\)', result)
-                        print(images)
-                        for image_url in images:
-                           reply = Reply(ReplyType.IMAGE_URL,image_url)
-                           channel = e_context["channel"]
-                           channel.send(reply, context)
-                    elif "![image](" in result:
-                        images = re.findall(r'!\[image\]\(data:image/[a-zA-Z]+;base64,([A-Za-z0-9+/=]+)\)', result)
-                        print(images)
-                        for image_url in images:
-                          base64Content = base64.b64decode(image_url)
-                          b_img = io.BytesIO(base64Content)
-                          reply = Reply(ReplyType.IMAGE,b_img)
-                          e_context["reply"] = reply
-                    else:
-                        reply = Reply(ReplyType.TEXT, result)
-                        e_context["reply"] = reply
+                    if self.image_regex:
+                        images = re.findall(self.image_regex, result)
+                        if images:
+                            for image_url in images:
+                                if image_url.startswith("http"):
+                                    reply = Reply(ReplyType.IMAGE_URL,image_url)
+                                else:
+                                    base64Content = base64.b64decode(image_url)
+                                    b_img = io.BytesIO(base64Content)
+                                    reply = Reply(ReplyType.IMAGE,b_img)
+                                channel = e_context["channel"]
+                                channel.send(reply, context)
+                            e_context.action = EventAction.BREAK_PASS
+                            return
+                    reply = Reply(ReplyType.TEXT, result)
+                    e_context["reply"] = reply
                 elif self.api_type == "dify":
                      result = response.json()['answer']
                      reply = Reply(ReplyType.TEXT, result)
