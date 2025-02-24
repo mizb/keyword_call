@@ -54,6 +54,16 @@ config.json 配置说明
         "open_ai_api_key":  "api-key",
         "open_ai_model": "@cf/meta/llama-3.1-70b-instruct",
         "prompt":  "你是一个专业的律师，你给提供专业的法律意见",
+        "image_regex": "!?\\[Generated Image\\]\\((https[^)]+)\\)",
+        "translator": "translator_openai"
+  },
+  "&$":{
+        "api_type": "openai",
+        "open_ai_api_base": "https://api.cloudflare.com/client/v4/accounts/account_id/ai/v1/chat/completions",
+        "open_ai_api_key":  "api-key",
+        "open_ai_model": "@cf/meta/llama-3.1-70b-instruct",
+        "prompt":  "你是一个专业的律师，你给提供专业的法律意见",
+        "image_regex": "!\\[image\\]\\(data:image/[a-zA-Z]+;base64,([A-Za-z0-9+/=]+)\\)",
         "translator": "translator_openai"
   },
   "query":{
