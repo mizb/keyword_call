@@ -43,7 +43,7 @@ class KeywordCall(Plugin):
     def on_handle_context(self, e_context: EventContext, retry_count: int = 0):
         try:
             context = e_context["context"]
-            print(context.type)
+            #print(context.type)
             if context.type != ContextType.TEXT:
                 return
             content = context.content.strip()
@@ -93,7 +93,7 @@ class KeywordCall(Plugin):
                        "user": "abc",
                        "files": []
                     }
-                logger.debug(f"[KeywordCall] openai_chat_url: {openai_chat_url}, openai_headers: {openai_headers}, openai_payload: {openai_payload}")
+                logger.info(f"[KeywordCall] openai_chat_url: {openai_chat_url}, openai_headers: {openai_headers}, openai_payload: {openai_payload}")
                 response = requests.post(openai_chat_url, headers=openai_headers, json=openai_payload, timeout=60)
                 response.raise_for_status()
                 if self.api_type == "cf-image":
@@ -116,6 +116,21 @@ class KeywordCall(Plugin):
                            reply = Reply(ReplyType.IMAGE_URL,image_url)
                            channel = e_context["channel"]
                            channel.send(reply, context)
+                    elif "点击下载图片" in result:
+                        images = re.findall(r'\[🖼️ 点击下载图片\]\((https?://[^\s]+)\)', result)
+                        print(images)
+                        for image_url in images:
+                           reply = Reply(ReplyType.IMAGE_URL,image_url)
+                           channel = e_context["channel"]
+                           channel.send(reply, context)
+                    elif "![image](" in result:
+                        images = re.findall(r'!\[image\]\(data:image/[a-zA-Z]+;base64,([A-Za-z0-9+/=]+)\)', result)
+                        print(images)
+                        for image_url in images:
+                          base64Content = base64.b64decode(image_url)
+                          b_img = io.BytesIO(base64Content)
+                          reply = Reply(ReplyType.IMAGE,b_img)
+                          e_context["reply"] = reply
                     else:
                         reply = Reply(ReplyType.TEXT, result)
                         e_context["reply"] = reply
