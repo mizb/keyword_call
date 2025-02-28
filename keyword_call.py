@@ -21,7 +21,7 @@ from .utils import Utils
     desire_priority=10,
     hidden=False,
     desc="Call different APIs based on keywords",
-    version="0.0.3",
+    version="0.0.2",
     author="pigracing",
 )
 class KeywordCall(Plugin):
@@ -43,8 +43,6 @@ class KeywordCall(Plugin):
     def on_handle_context(self, e_context: EventContext, retry_count: int = 0):
         try:
             context = e_context["context"]
-            print(context)
-            #print(context.type)
             if context.type != ContextType.TEXT:
                 return
             content = context.content.strip()
@@ -52,6 +50,18 @@ class KeywordCall(Plugin):
                 logger.debug("命中插件保留字，不进行响应")
                 return
             logger.debug("[keyword] on_handle_context. content: %s" % content)
+            if content == "$kchelp":
+               result = []
+               for key, value in self.config.items():
+                  if key in ["#invoking_reply#", "#error_reply#", "#translator#"]:
+                     continue
+                  if isinstance(value, dict) and "title" in value:
+                     result.append(f"{key}:{value['title']}")
+               result = "\n".join(result)
+               reply = Reply(ReplyType.TEXT, result)
+               e_context["reply"] = reply
+               e_context.action = EventAction.BREAK_PASS
+               return
             keywords = list(self.config.keys())
             matching_keywords = [keyword for keyword in keywords if content.startswith(keyword)]
             if matching_keywords:
