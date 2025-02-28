@@ -21,7 +21,7 @@ from .utils import Utils
     desire_priority=10,
     hidden=False,
     desc="Call different APIs based on keywords",
-    version="0.0.2",
+    version="0.0.3",
     author="pigracing",
 )
 class KeywordCall(Plugin):
@@ -52,6 +52,13 @@ class KeywordCall(Plugin):
             logger.debug("[keyword] on_handle_context. content: %s" % content)
             if content == "$kchelp":
                result = []
+               result.append("【关键字:功能介绍】")
+               result.append("「示例：$:画画功能画」")
+               result.append("「说明：:左边的关键字$为关键字」")
+               result.append("「使用：$给我画幅画」")
+               result.append("==============================")
+               result.append("")
+
                for key, value in self.config.items():
                   if key in ["#invoking_reply#", "#error_reply#", "#translator#"]:
                      continue
@@ -152,7 +159,7 @@ class KeywordCall(Plugin):
             e_context.action = EventAction.BREAK_PASS
 
     def get_help_text(self, verbose, **kwargs):
-        return f'根据设定的关键字调用相应的API服务'
+        return f'根据设定的关键字调用相应的API服务，具体使用请输入$kchelp'
 
     def _load_config_template(self):
         logger.debug("No KeywordCall plugin config.json, use plugins/keyword_call/config.json.template")
